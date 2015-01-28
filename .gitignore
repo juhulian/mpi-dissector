@@ -1,0 +1,6 @@
+Makefile
+Makefile.in
+mpi.la
+packet-mpi.lo
+plugin.c
+plugin.lo
