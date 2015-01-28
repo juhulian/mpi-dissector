@@ -10,13 +10,11 @@ To install this dissector, pleas read the [README.plugins](https://code.wireshar
 
 ## features
 
-* [ ] update this feature/todo list
-
-* [x] dissect oob headers
+* [x] ** dissect oob headers **
     * [x] basic oob header
     * [x] support more oob headers in one packet
     * [x] carry the length over packets
-* [ ] dissect oob messages
+* [ ] ** dissect oob messages **
     * [x] connection ack
     * [ ] send handler (partly)
     * [ ] orte daemon tree spawn
@@ -30,7 +28,7 @@ To install this dissector, pleas read the [README.plugins](https://code.wireshar
     * [ ] orte grpcomm peer\_fini\_barrier
     * [x] orte rml tag iof
     * [ ] orte rml tag show help
-* [ ] dissect btl header
+* [ ] ** dissect btl header **
     * [x] base header
     * [x] common header
     * [x] match header
@@ -46,16 +44,17 @@ To install this dissector, pleas read the [README.plugins](https://code.wireshar
     * [ ] rndvrestartack header
     * [ ] rndvrestartnack header
     * [ ] recverrnotify header
-* [ ] dissect btl message
+* [ ] ** dissect btl message **
     * [x] synchronization
     * [ ] barrier
+* [ ] update this feature/todo list :-)
 
 ## screenshots
 
-![OOB message data](https://raw.githubusercontent.com/juhulian/mpi-dissector/master/screenshots/wireshark-oob-msg.png "oob msg data")
+![oob msg data](https://raw.githubusercontent.com/juhulian/mpi-dissector/master/screenshots/wireshark-oob-msg.png "oob message data")
 
-![BTL synchronization request](https://raw.githubusercontent.com/juhulian/mpi-dissector/master/screenshots/wireshark-sync.png "btl sync req")
+![btl sync req](https://raw.githubusercontent.com/juhulian/mpi-dissector/master/screenshots/wireshark-sync.png "btl synchronization request")
 
-![BTL match](https://raw.githubusercontent.com/juhulian/mpi-dissector/master/screenshots/wireshark-match.png "btl match")
+![btl match](https://raw.githubusercontent.com/juhulian/mpi-dissector/master/screenshots/wireshark-match.png "btl match")
 
-![BTL match full](https://raw.githubusercontent.com/juhulian/mpi-dissector/master/screenshots/wireshark-match-full.png "btl match full")
+![btl match full](https://raw.githubusercontent.com/juhulian/mpi-dissector/master/screenshots/wireshark-match-full.png "btl match full")
