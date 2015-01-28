@@ -10,11 +10,11 @@ To install this dissector, pleas read the [README.plugins](https://code.wireshar
 
 ## features
 
-* [x] ** dissect oob headers **
+* [x] **dissect oob headers**
     * [x] basic oob header
     * [x] support more oob headers in one packet
     * [x] carry the length over packets
-* [ ] ** dissect oob messages **
+* [ ] **dissect oob messages**
     * [x] connection ack
     * [ ] send handler (partly)
     * [ ] orte daemon tree spawn
@@ -28,7 +28,7 @@ To install this dissector, pleas read the [README.plugins](https://code.wireshar
     * [ ] orte grpcomm peer\_fini\_barrier
     * [x] orte rml tag iof
     * [ ] orte rml tag show help
-* [ ] ** dissect btl header **
+* [ ] **dissect btl header**
     * [x] base header
     * [x] common header
     * [x] match header
@@ -44,7 +44,7 @@ To install this dissector, pleas read the [README.plugins](https://code.wireshar
     * [ ] rndvrestartack header
     * [ ] rndvrestartnack header
     * [ ] recverrnotify header
-* [ ] ** dissect btl message **
+* [ ] **dissect btl message**
     * [x] synchronization
     * [ ] barrier
 * [ ] update this feature/todo list :-)
