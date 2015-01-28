@@ -2,11 +2,11 @@
 
 This [Wireshark](https://www.wireshark.org/) Plugin dissect the general [Open MPI](http://www.open-mpi.org/) TCP-Traffic.
 
-Pleas note: It is a proof of concept plugin with no claim to completeness! Use at your own risk! It is only tested on a Linux machine with `Wireshark 1.99.2` and `Open MPI 1.8.4`.
+Please note: It is a proof of concept plugin with no claim to completeness! Usage at your own risk! It was only tested on a Linux machine with `Wireshark 1.99.2` and `Open MPI 1.8.4`.
 
 ## installation
 
-To install this dissector, pleas read the [README.plugins](https://code.wireshark.org/review/gitweb?p=wireshark.git;a=blob_plain;f=doc/README.plugins) at section `3.2 Permanent addition`. The help file is also available in the Wireshark `doc` folder.
+To install this dissector, please read the [README.plugins](https://code.wireshark.org/review/gitweb?p=wireshark.git;a=blob_plain;f=doc/README.plugins) section `3.2 Permanent addition`. The help file is also available in the Wireshark `doc` folder.
 
 ## features
 
