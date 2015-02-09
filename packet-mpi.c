@@ -27,21 +27,19 @@
 
 #include "config.h"
 
-
 #include <epan/packet.h>
 #include <epan/conversation.h>
 #include <epan/prefs.h>
 
 #include "packet-mpi.h"
 
+#define MPI_DEBUG 0
+
 /* Initialize the protocol and registered fields */
 static int proto_mpi = -1;
 
 /* Global sample preference ("controls" display of numbers) */
 static gboolean pref_little_endian = TRUE;
-/* Global sample port preference - real port preferences should generally
- * default to 0 unless there is an IANA-registered (or equivalent) port for your
- * protocol. */
 /*
  * #define MPI_TCP_PORT 1024
  * static guint tcp_port_pref = MPI_TCP_PORT;
@@ -49,7 +47,8 @@ static gboolean pref_little_endian = TRUE;
 #define DEFAULT_MPI_PORT_RANGE "1024-65535"
 static range_t *global_mpi_tcp_port_range;
 
-#define MPI_MIN_LENGTH 8
+/* mpi_abort with 5 bytes */
+#define MPI_MIN_LENGTH 5 
 
 /* Initialize the subtree pointers */
 static gint ett_mpi = -1;
@@ -504,6 +503,11 @@ dissect_mpi_sync(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, guint the_
         return the_offset;
     }
 
+    if (MPI_DEBUG)
+        g_print("%d dissect_mpi_sync, reported_length: %d offset: %d, tree: %s\n",
+                pinfo->fd->num, tvb_reported_length(tvb), the_offset,
+                tree ? "true":"false");
+
     col_set_str(pinfo->cinfo, COL_PROTOCOL, "MPI");
 
     /* Network-to-host-order accessors for 32-bit integers (guint32) */
@@ -736,6 +740,11 @@ dissect_mpi_oob(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, guint the_o
         return the_offset;
     }
 
+    if (MPI_DEBUG)
+        g_print("%d dissect_mpi_oob, reported_length: %d, offset: %d, tree: %s\n",
+                pinfo->fd->num, tvb_reported_length(tvb), the_offset,
+                tree ? "true":"false");
+
     col_set_str(pinfo->cinfo, COL_PROTOCOL, "MPI");
     col_clear(pinfo->cinfo,COL_INFO);
 
@@ -758,7 +767,8 @@ dissect_mpi_oob(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, guint the_o
         mpi_oob_trans = (mpi_oob_trans_t *)conv_data;
     } else {
         if (28 > tvb_captured_length(tvb) - the_offset) {
-            g_print("start new conversation without a header?\n");
+            g_print("%d start new conversation without a header?\n",
+                    pinfo->fd->num);
             return the_offset;
         }
         mpi_oob_trans = (mpi_oob_trans_t *)
@@ -1175,6 +1185,11 @@ dissect_mpi_match(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, guint the
         return the_offset;
     }
 
+    if (MPI_DEBUG)
+        g_print("%d dissect_mpi_match, reported_length: %d offset: %d, tree: %s\n",
+                pinfo->fd->num, tvb_reported_length(tvb), the_offset,
+                tree ? "true":"false");
+
     match_padding = 1;
     offset = the_offset;
     if (pref_little_endian) {
@@ -1197,6 +1212,7 @@ dissect_mpi_match(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, guint the
         }
     } else {
         byte_order = ENC_BIG_ENDIAN;
+
         match_ctx = tvb_get_ntohs(tvb, offset);
         offset += 2;
         match_src = tvb_get_ntohl(tvb, offset);
@@ -1268,6 +1284,11 @@ dissect_mpi_rndv(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, guint the_
     if (12 > tvb_reported_length(tvb) - the_offset) {
         return the_offset;
     }
+
+    if (MPI_DEBUG)
+        g_print("%d dissect_mpi_rndv, reported_length: %d, offset: %d, tree: %s\n",
+                pinfo->fd->num, tvb_reported_length(tvb), the_offset,
+                tree ? "true":"false");
 
     the_offset = dissect_mpi_match(tvb, pinfo, tree, the_offset);
 
@@ -1383,6 +1404,11 @@ dissect_mpi_rget(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, guint the_
         return the_offset;
     }
 
+    if (MPI_DEBUG)
+        g_print("%d dissect_mpi_rget, reported_length: %d, offset: %d, tree: %s\n",
+                pinfo->fd->num, tvb_reported_length(tvb), the_offset,
+                tree ? "true":"false");
+
     the_offset = dissect_mpi_rndv(tvb, pinfo, tree, the_offset);
 
     /* we need minimum 12 bytes for the rendezvous/get header */
@@ -1461,6 +1487,11 @@ dissect_mpi_frag(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, guint the_
     if (24 > tvb_reported_length(tvb) - the_offset) {
         return the_offset;
     }
+
+    if (MPI_DEBUG)
+        g_print("%d dissect_mpi_frag, reported_length: %d, offset: %d, tree: %s\n",
+                pinfo->fd->num, tvb_reported_length(tvb), the_offset,
+                tree ? "true":"false");
 
     offset = the_offset;
     frag_padding = 1;
@@ -1554,6 +1585,11 @@ dissect_mpi_ack(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, guint the_o
         return the_offset;
     }
 
+    if (MPI_DEBUG)
+        g_print("%d dissect_mpi_ack, reported_length: %d, offset: %d, tree: %s\n",
+                pinfo->fd->num, tvb_reported_length(tvb), the_offset,
+                tree ? "true":"false");
+
     offset = the_offset;
     ack_padding = 1;
 
@@ -1646,6 +1682,11 @@ dissect_mpi_rdma(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, guint the_
     if (52 > tvb_reported_length(tvb) - the_offset) {
         return the_offset;
     }
+
+    if (MPI_DEBUG)
+        g_print("%d dissect_mpi_rdma, reported_length: %d, offset: %d, tree: %s\n",
+                pinfo->fd->num, tvb_reported_length(tvb), the_offset,
+                tree ? "true":"false");
 
     offset = the_offset;
     rdma_padding = 1;
@@ -1769,6 +1810,11 @@ dissect_mpi_fin(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, guint the_o
         return the_offset;
     }
 
+    if (MPI_DEBUG)
+        g_print("%d dissect_mpi_fin, reported_length: %d, offset: %d, tree: %s\n",
+                pinfo->fd->num, tvb_reported_length(tvb), the_offset,
+                tree ? "true":"false");
+
     offset = the_offset;
     fin_padding = 1;
 
@@ -1868,6 +1914,12 @@ dissect_mpi_rndvrestartnotify(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tre
     if (41 > tvb_reported_length(tvb) - the_offset) {
         return the_offset;
     }
+
+    if (MPI_DEBUG)
+        g_print("%d dissect_mpi_rndvrestartnotify, reported_length: %d, "
+                "offset: %d, tree: %s\n",
+                pinfo->fd->num, tvb_reported_length(tvb), the_offset,
+                tree ? "true":"false");
 
     the_offset = dissect_mpi_match(tvb, pinfo, tree, the_offset);
 
@@ -2001,6 +2053,11 @@ dissect_mpi(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data _U_)
         return 0;
     }
 
+    if (MPI_DEBUG)
+        g_print("%d dissect_mpi, reported_length: %d, tree: %s\n",
+                pinfo->fd->num, tvb_reported_length(tvb),
+                tree ? "true":"false");
+
     /* sync packet: length == 8 */
     if (8 == tvb_captured_length(tvb)) {
         return dissect_mpi_sync(tvb, pinfo, tree, offset);
@@ -2080,6 +2137,8 @@ dissect_mpi(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data _U_)
         proto_item_append_text(ti, "type: %s, flags: 0x%02x",
                 val_to_str(common_type, packetbasenames, "Unknown (0x%02x)"),
                 common_flags);
+    } else {
+        offset = 10;
     }
 
     switch(base_base) {
@@ -2466,6 +2525,9 @@ proto_register_mpi(void)
         &ett_mpi_rndvrestartnotify
     };
 
+    if (MPI_DEBUG)
+        g_print("proto_register_mpi\n");
+
     /* Register the protocol name and description */
     proto_mpi = proto_register_protocol(
             "Message Passing Interface Protocol", /* PROTONAME */
@@ -2514,6 +2576,9 @@ proto_reg_handoff_mpi(void)
     static gboolean initialized = FALSE;
     static dissector_handle_t mpi_handle;
     static range_t *mpi_tcp_port_range;
+
+    if (MPI_DEBUG)
+        g_print("proto_reg_handoff_mpi\n");
 
     if (!initialized) {
         mpi_handle = new_create_dissector_handle(dissect_mpi, proto_mpi);
