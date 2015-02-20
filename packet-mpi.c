@@ -102,6 +102,7 @@ static int hf_mpi_oob_data = -1;
 static int hf_mpi_oob_iof_type = -1;
 static int hf_mpi_oob_len = -1;
 static int hf_mpi_oob_num_vals = -1;
+static int hf_mpi_oob_odles_data_type = -1;
 static int hf_mpi_oob_opal_data_type = -1;
 static int hf_mpi_oob_orte_data_type = -1;
 static int hf_mpi_oob_uri = -1;
@@ -445,6 +446,66 @@ static const value_string ortedatatypenames[] = {
     { 0, NULL }
 };
 
+/* odls_types.h */
+#define ORTE_DAEMON_CONTACT_QUERY_CMD     1
+#define ORTE_DAEMON_KILL_LOCAL_PROCS      2
+#define ORTE_DAEMON_SIGNAL_LOCAL_PROCS    3
+#define ORTE_DAEMON_ADD_LOCAL_PROCS       4
+#define ORTE_DAEMON_TREE_SPAWN            5
+#define ORTE_DAEMON_HEARTBEAT_CMD         6
+#define ORTE_DAEMON_EXIT_CMD              7
+#define ORTE_DAEMON_PROCESS_AND_RELAY_CMD 9
+#define ORTE_DAEMON_MESSAGE_LOCAL_PROCS   10
+#define ORTE_DAEMON_NULL_CMD              11
+#define ORTE_DAEMON_SYNC_BY_PROC          12
+#define ORTE_DAEMON_SYNC_WANT_NIDMAP      13
+/* commands for use by tools */
+#define ORTE_DAEMON_REPORT_JOB_INFO_CMD   14
+#define ORTE_DAEMON_REPORT_NODE_INFO_CMD  15
+#define ORTE_DAEMON_REPORT_PROC_INFO_CMD  16
+#define ORTE_DAEMON_SPAWN_JOB_CMD         17
+#define ORTE_DAEMON_TERMINATE_JOB_CMD     18
+#define ORTE_DAEMON_HALT_VM_CMD           19
+/* request proc resource usage */
+#define ORTE_DAEMON_TOP_CMD               22
+/* bootstrap */
+#define ORTE_DAEMON_NAME_REQ_CMD          23
+#define ORTE_DAEMON_CHECKIN_CMD           24
+#define ORTE_TOOL_CHECKIN_CMD             25
+/* process msg command */
+#define ORTE_DAEMON_PROCESS_CMD           26
+/* process called "errmgr.abort_procs" */
+#define ORTE_DAEMON_ABORT_PROCS_CALLED    28
+
+static const value_string odlesdatatypenames[] = {
+    { ORTE_DAEMON_CONTACT_QUERY_CMD, "Contact Query CMD" },
+    { ORTE_DAEMON_KILL_LOCAL_PROCS, "Kill Local Procs" },
+    { ORTE_DAEMON_SIGNAL_LOCAL_PROCS, "Signal Local Procs" },
+    { ORTE_DAEMON_ADD_LOCAL_PROCS, "Add Local Procs" },
+    { ORTE_DAEMON_TREE_SPAWN, "Tree Spawn" },
+    { ORTE_DAEMON_HEARTBEAT_CMD, "Heartbeat CMD" },
+    { ORTE_DAEMON_EXIT_CMD, "Exit CMD" },
+    { ORTE_DAEMON_PROCESS_AND_RELAY_CMD, "Process and Relay CMD" },
+    { ORTE_DAEMON_MESSAGE_LOCAL_PROCS, "Message Local Procs" },
+    { ORTE_DAEMON_NULL_CMD, "Null CMD" },
+    { ORTE_DAEMON_SYNC_BY_PROC, "SYNC by Proc" },
+    { ORTE_DAEMON_SYNC_WANT_NIDMAP, "SYNC Want NIDMAP" },
+    { ORTE_DAEMON_REPORT_JOB_INFO_CMD, "Report Job Info CMD" },
+    { ORTE_DAEMON_REPORT_NODE_INFO_CMD, "Report Node Info CMD" },
+    { ORTE_DAEMON_REPORT_PROC_INFO_CMD, "Report Proc Info CMD" },
+    { ORTE_DAEMON_SPAWN_JOB_CMD, "Spawn Job CMD" },
+    { ORTE_DAEMON_TERMINATE_JOB_CMD, "Terminate Job CMD" },
+    { ORTE_DAEMON_HALT_VM_CMD, "Halt VM CMD" },
+    { ORTE_DAEMON_TOP_CMD, "Top CMD" },
+    { ORTE_DAEMON_NAME_REQ_CMD, "Name REQ CMD" },
+    { ORTE_DAEMON_CHECKIN_CMD, "Checkin CMD" },
+    { ORTE_TOOL_CHECKIN_CMD, "Tool Checkin CMD" },
+    { ORTE_DAEMON_PROCESS_CMD, "Process CMD" },
+    { ORTE_DAEMON_ABORT_PROCS_CALLED, "Abort Procs Called" },
+    { 0, NULL }
+};
+
+
 typedef struct _mpi_info_t {
     wmem_tree_t *pdus;
 } mpi_info_t;
@@ -732,6 +793,8 @@ dissect_mpi_oob(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, guint the_o
     const guint8 *uri;
     const guint8 *nodename;
     guint32 hwloc_len;
+    /* xcast */
+    guint8 odles;
 
     offset = 0;
 
@@ -930,6 +993,11 @@ dissect_mpi_oob(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, guint the_o
                         val_to_str(rml_tag, rmltagnames, "%d"), rml_tag);
             }
 
+            if (MPI_DEBUG)
+                g_print("%d dissect_mpi_oob_msg, rml_tag: %s (%d), offset: %d, "
+                        "tree: %s\n",
+                        pinfo->fd->num, val_to_str(rml_tag, rmltagnames, "%d"),
+                        rml_tag, offset, tree ? "true":"false");
             switch(rml_tag) {
                 case ORTE_RML_TAG_INVALID:
                     /* mpi-version "1.8.4\0" + credential "1234567\0" = 14 bytes */
@@ -1149,6 +1217,57 @@ dissect_mpi_oob(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, guint the_o
                     proto_item_append_text(ti, ", jobid: %d, vpid: %d, "
                             "nodename: %s, uri: %s, hwloc-len: %d",
                             jobid, vpid, nodename, uri, hwloc_len);
+                    break;
+                case ORTE_RML_TAG_XCAST:
+                    fully_des = tvb_get_guint8(tvb, offset);
+                    if (9 == fully_des) { /* with debug information */
+                        if (8 > nbytes) { /* MPI_Abort: 09:00:00:00:01:31:0c:07 */
+                            break;
+                        } /* TODO: implement other cases */
+                        offset += 7;
+                        odles = tvb_get_guint8(tvb, offset);
+                        offset += 1;
+                        if (tree) {
+                            offset = the_offset;
+                            proto_tree_add_item(mpi_oob_tree, hf_mpi_oob_opal_data_type,
+                                    tvb, offset, 1, ENC_BIG_ENDIAN);
+                            offset += 1;
+                            proto_tree_add_item(mpi_oob_tree, hf_mpi_oob_num_vals,
+                                    tvb, offset, 4, ENC_BIG_ENDIAN);
+                            offset += 4;
+                            proto_tree_add_item(mpi_oob_tree, hf_mpi_oob_orte_data_type,
+                                    tvb, offset, 1, ENC_BIG_ENDIAN);
+                            offset += 1;
+                            proto_tree_add_item(mpi_oob_tree, hf_mpi_oob_opal_data_type,
+                                    tvb, offset, 1, ENC_BIG_ENDIAN);
+                            offset += 1;
+                            proto_tree_add_item(mpi_oob_tree, hf_mpi_oob_odles_data_type,
+                                    tvb, offset, 1, ENC_BIG_ENDIAN);
+                            offset += 1;
+                        }
+                    } else { /* without debug information */
+                        if (5 > nbytes) { /* MPI_Abort: 00:00:00:01:07 */
+                            break;
+                        }
+                        offset += 4;
+                        odles = tvb_get_guint8(tvb, offset);
+                        offset += 1;
+                        if (tree) {
+                            offset = the_offset;
+                            proto_tree_add_item(mpi_oob_tree, hf_mpi_oob_num_vals,
+                                    tvb, offset, 4, ENC_BIG_ENDIAN);
+                            offset += 4;
+                            proto_tree_add_item(mpi_oob_tree, hf_mpi_oob_odles_data_type,
+                                    tvb, offset, 1, ENC_BIG_ENDIAN);
+                            offset += 1;
+                        }
+                    }
+
+                    col_append_fstr(pinfo->cinfo, COL_INFO, " Daemon-CMD=%s",
+                            val_to_str(odles, odlesdatatypenames, "%d"));
+
+                    proto_item_append_text(ti, ", daemon-cmd: %s",
+                            val_to_str(odles, odlesdatatypenames, "%d"));
                     break;
             }
             nbytes -= (offset - the_offset);
@@ -2058,15 +2177,15 @@ dissect_mpi(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data _U_)
                 pinfo->fd->num, tvb_reported_length(tvb),
                 tree ? "true":"false");
 
-    /* sync packet: length == 8 */
-    if (8 == tvb_captured_length(tvb)) {
-        return dissect_mpi_sync(tvb, pinfo, tree, offset);
-    }
-
     /* oob packet: src and dst port in range of 2^15 and 2^16 -1 */
     if (32768 <= pinfo->srcport && MAX_TCP_PORT >= pinfo->srcport &&
             32768 <= pinfo->destport && MAX_TCP_PORT >= pinfo->destport) {
         return dissect_mpi_oob(tvb, pinfo, tree, offset);
+    }
+
+    /* sync packet: length == 8 */
+    if (8 == tvb_captured_length(tvb)) {
+        return dissect_mpi_sync(tvb, pinfo, tree, offset);
     }
 
     base_base = tvb_get_guint8(tvb, 0);
@@ -2248,6 +2367,10 @@ proto_register_mpi(void)
         { &hf_mpi_oob_len,
             { "Length", "mpi.len",
                 FT_INT32, BASE_DEC, NULL, 0x0, NULL, HFILL }
+        },
+        { &hf_mpi_oob_odles_data_type,
+            { "ORTE Daemon", "mpi.orte_daemon",
+                FT_UINT8, BASE_DEC, VALS(odlesdatatypenames), 0x0, NULL, HFILL }
         },
         { &hf_mpi_oob_opal_data_type,
             { "OPAL Datatype", "mpi.opal_datatype",
